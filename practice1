@@ -1,0 +1,1350 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "3aa2515b",
+   "metadata": {
+    "papermill": {
+     "duration": 0.004818,
+     "end_time": "2026-03-19T19:27:03.291410",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:03.286592",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# 문맥 (Context)\n",
+    "고객을 유지하기 위해 행동을 예측하세요. 모든 관련 고객 데이터를 분석하고 집중적인 고객 유지 프로그램을 개발할 수 있습니다. \n",
+    "\n",
+    "# 콘텐츠 (Content)\n",
+    "각 행(row)은 한 명의 고객을 나타내며, 각 열(column)에는 메타데이터 열에 설명된 고객의 속성이 포함되어 있습니다.\n",
+    "\n",
+    "이 데이터 세트에는 다음에 대한 정보가 포함되어 있습니다:\n",
+    "\n",
+    "- 지난달 내에 떠난 고객들 – 해당 열의 이름은 Churn(이탈)입니다. => Target\n",
+    "\n",
+    "- 각 고객이 가입한 서비스들 – 전화, 다중 회선, 인터넷, 온라인 보안, 온라인 백업, 기기 보호, 기술 지원, 스트리밍 TV 및 영화\n",
+    "\n",
+    "- 고객 계정 정보 – 고객 유지 기간(가입 기간), 계약 유형, 결제 방법, 종이 없는 청구서(전자 청구) 여부, 월별 요금 및 총 요금\n",
+    "\n",
+    "- 고객에 대한 인구통계학적 정보 – 성별, 연령대, 파트너 및 부양가족 유무"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "8fbe00b6",
+   "metadata": {
+    "_cell_guid": "b1076dfc-b9ad-4769-8c92-a6c4dae69d19",
+    "_uuid": "8f2839f25d086af736a60e9eeb907d3b93b6e0e5",
+    "execution": {
+     "iopub.execute_input": "2026-03-19T19:27:03.298937Z",
+     "iopub.status.busy": "2026-03-19T19:27:03.298621Z",
+     "iopub.status.idle": "2026-03-19T19:27:04.418173Z",
+     "shell.execute_reply": "2026-03-19T19:27:04.416761Z"
+    },
+    "papermill": {
+     "duration": 1.126107,
+     "end_time": "2026-03-19T19:27:04.420593",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:03.294486",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "/kaggle/input/datasets/blastchar/telco-customer-churn/WA_Fn-UseC_-Telco-Customer-Churn.csv\n"
+     ]
+    }
+   ],
+   "source": [
+    "# This Python 3 environment comes with many helpful analytics libraries installed\n",
+    "# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python\n",
+    "# For example, here's several helpful packages to load\n",
+    "\n",
+    "import numpy as np # linear algebra\n",
+    "import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)\n",
+    "\n",
+    "# Input data files are available in the read-only \"../input/\" directory\n",
+    "# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory\n",
+    "\n",
+    "import os\n",
+    "for dirname, _, filenames in os.walk('/kaggle/input'):\n",
+    "    for filename in filenames:\n",
+    "        print(os.path.join(dirname, filename))\n",
+    "\n",
+    "# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using \"Save & Run All\" \n",
+    "# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "49d0a4fc",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-19T19:27:04.427920Z",
+     "iopub.status.busy": "2026-03-19T19:27:04.427525Z",
+     "iopub.status.idle": "2026-03-19T19:27:04.487264Z",
+     "shell.execute_reply": "2026-03-19T19:27:04.486530Z"
+    },
+    "papermill": {
+     "duration": 0.06562,
+     "end_time": "2026-03-19T19:27:04.489300",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:04.423680",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "rawdf = pd.read_csv('/kaggle/input/datasets/blastchar/telco-customer-churn/WA_Fn-UseC_-Telco-Customer-Churn.csv')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1e43b073",
+   "metadata": {
+    "papermill": {
+     "duration": 0.002667,
+     "end_time": "2026-03-19T19:27:04.496248",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:04.493581",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# 1. 데이터 확인"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "39d90acb",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-19T19:27:04.503866Z",
+     "iopub.status.busy": "2026-03-19T19:27:04.502706Z",
+     "iopub.status.idle": "2026-03-19T19:27:04.553274Z",
+     "shell.execute_reply": "2026-03-19T19:27:04.552404Z"
+    },
+    "papermill": {
+     "duration": 0.056618,
+     "end_time": "2026-03-19T19:27:04.555388",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:04.498770",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>customerID</th>\n",
+       "      <th>gender</th>\n",
+       "      <th>SeniorCitizen</th>\n",
+       "      <th>Partner</th>\n",
+       "      <th>Dependents</th>\n",
+       "      <th>tenure</th>\n",
+       "      <th>PhoneService</th>\n",
+       "      <th>MultipleLines</th>\n",
+       "      <th>InternetService</th>\n",
+       "      <th>OnlineSecurity</th>\n",
+       "      <th>...</th>\n",
+       "      <th>DeviceProtection</th>\n",
+       "      <th>TechSupport</th>\n",
+       "      <th>StreamingTV</th>\n",
+       "      <th>StreamingMovies</th>\n",
+       "      <th>Contract</th>\n",
+       "      <th>PaperlessBilling</th>\n",
+       "      <th>PaymentMethod</th>\n",
+       "      <th>MonthlyCharges</th>\n",
+       "      <th>TotalCharges</th>\n",
+       "      <th>Churn</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>7590-VHVEG</td>\n",
+       "      <td>Female</td>\n",
+       "      <td>0</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>1</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No phone service</td>\n",
+       "      <td>DSL</td>\n",
+       "      <td>No</td>\n",
+       "      <td>...</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Month-to-month</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Electronic check</td>\n",
+       "      <td>29.85</td>\n",
+       "      <td>29.85</td>\n",
+       "      <td>No</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>5575-GNVDE</td>\n",
+       "      <td>Male</td>\n",
+       "      <td>0</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>34</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>DSL</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>...</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>One year</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Mailed check</td>\n",
+       "      <td>56.95</td>\n",
+       "      <td>1889.5</td>\n",
+       "      <td>No</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>3668-QPYBK</td>\n",
+       "      <td>Male</td>\n",
+       "      <td>0</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>2</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>DSL</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>...</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Month-to-month</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Mailed check</td>\n",
+       "      <td>53.85</td>\n",
+       "      <td>108.15</td>\n",
+       "      <td>Yes</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>7795-CFOCW</td>\n",
+       "      <td>Male</td>\n",
+       "      <td>0</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>45</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No phone service</td>\n",
+       "      <td>DSL</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>...</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>One year</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Bank transfer (automatic)</td>\n",
+       "      <td>42.30</td>\n",
+       "      <td>1840.75</td>\n",
+       "      <td>No</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>9237-HQITU</td>\n",
+       "      <td>Female</td>\n",
+       "      <td>0</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>2</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Fiber optic</td>\n",
+       "      <td>No</td>\n",
+       "      <td>...</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Month-to-month</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Electronic check</td>\n",
+       "      <td>70.70</td>\n",
+       "      <td>151.65</td>\n",
+       "      <td>Yes</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>5 rows × 21 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   customerID  gender  SeniorCitizen Partner Dependents  tenure PhoneService  \\\n",
+       "0  7590-VHVEG  Female              0     Yes         No       1           No   \n",
+       "1  5575-GNVDE    Male              0      No         No      34          Yes   \n",
+       "2  3668-QPYBK    Male              0      No         No       2          Yes   \n",
+       "3  7795-CFOCW    Male              0      No         No      45           No   \n",
+       "4  9237-HQITU  Female              0      No         No       2          Yes   \n",
+       "\n",
+       "      MultipleLines InternetService OnlineSecurity  ... DeviceProtection  \\\n",
+       "0  No phone service             DSL             No  ...               No   \n",
+       "1                No             DSL            Yes  ...              Yes   \n",
+       "2                No             DSL            Yes  ...               No   \n",
+       "3  No phone service             DSL            Yes  ...              Yes   \n",
+       "4                No     Fiber optic             No  ...               No   \n",
+       "\n",
+       "  TechSupport StreamingTV StreamingMovies        Contract PaperlessBilling  \\\n",
+       "0          No          No              No  Month-to-month              Yes   \n",
+       "1          No          No              No        One year               No   \n",
+       "2          No          No              No  Month-to-month              Yes   \n",
+       "3         Yes          No              No        One year               No   \n",
+       "4          No          No              No  Month-to-month              Yes   \n",
+       "\n",
+       "               PaymentMethod MonthlyCharges  TotalCharges Churn  \n",
+       "0           Electronic check          29.85         29.85    No  \n",
+       "1               Mailed check          56.95        1889.5    No  \n",
+       "2               Mailed check          53.85        108.15   Yes  \n",
+       "3  Bank transfer (automatic)          42.30       1840.75    No  \n",
+       "4           Electronic check          70.70        151.65   Yes  \n",
+       "\n",
+       "[5 rows x 21 columns]"
+      ]
+     },
+     "execution_count": 3,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "rawdf.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5c6f3d2e",
+   "metadata": {
+    "papermill": {
+     "duration": 0.002528,
+     "end_time": "2026-03-19T19:27:04.561116",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:04.558588",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "- **customerID**\n",
+    "- **gender** : Whether the customer is a male or a female\n",
+    "  고객이 남성인지 여성인지\n",
+    "- **SeniorCitizen** : Whether the customer is a senior citizen or not (1, 0)\n",
+    "  고객이 노인인지 아닌지 여부(1, 0)\n",
+    "- **Partner** : Whether the customer has a partner or not (Yes, No)\n",
+    "  고객에게 파트너가 있는지 여부 (예, 아니오) -> 결혼 유무인가?\n",
+    "- **Dependents** : Whether the customer has dependents or not (Yes, No)\n",
+    "  고객에게 부양가족이 있는지 여부 (예, 아니오)\n",
+    "- **tenure** : Number of months the customer has stayed with the company\n",
+    "  고객이 해당 회사에 머문 기간(개월 수)\n",
+    "- **PhoneService** : Whether the customer has a phone service or not (Yes, No)\n",
+    "  고객이 전화 서비스를 이용하고 있는지 여부 (예, 아니오)\n",
+    "- **MultipleLines** : Whether the customer has multiple lines or not (Yes, No, No phone service)\n",
+    "  고객이 여러 회선을 사용하는지 여부 (예, 아니오, 전화 서비스 없음)\n",
+    "- **InternetService** : Customer’s internet service provider (DSL, Fiber optic, No)\n",
+    "  고객의 인터넷 서비스 제공업체(DSL, 광섬유, 기타)\n",
+    "- **OnlineSecurity** : Whether the customer has online security or not (Yes, No, No internet service)\n",
+    "  고객이 온라인 보안 서비스를 이용하고 있는지 여부 (예, 아니오, 인터넷 서비스 없음)\n",
+    "- **OnlineBackup** : Whether the customer has online backup or not (Yes, No, No internet service)\n",
+    "  고객이 온라인 백업 서비스를 이용하는지 여부 (인터넷 서비스 이용, 이용 안 함, 이용 안 함)\n",
+    "- **DeviceProtection** : Whether the customer has device protection or not (Yes, No, No internet service)\n",
+    "  고객이 기기 보호 서비스를 이용하고 있는지 여부 (예, 아니오, 인터넷 서비스 없음)\n",
+    "- **TechSupport** : Whether the customer has tech support or not (Yes, No, No internet service)\n",
+    "  고객이 기술 지원을 받는지 여부 (예, 아니오, 인터넷 서비스 없음)\n",
+    "- **StreamingTV** : Whether the customer has streaming TV or not (Yes, No, No internet service)\n",
+    "  고객이 스트리밍 TV를 이용하는지 여부 (인터넷 서비스 이용, 이용 안 함, 이용 안 함)\n",
+    "- **StreamingMovies** : Whether the customer has streaming movies or not (Yes, No, No internet service)\n",
+    "  고객이 스트리밍 영화 서비스를 이용하는지 여부 (예, 아니오, 인터넷 서비스 없음)\n",
+    "- **Contract** : The contract term of the customer (Month-to-month, One year, Two year)\n",
+    "  고객의 계약 기간 (월 단위, 1년, 2년)\n",
+    "- **PaperlessBilling** : Whether the customer has paperless billing or not (Yes, No)\n",
+    "  고객이 종이 없는 청구서를 사용하는지 여부 (예, 아니오)\n",
+    "- **PaymentMethod** : The customer’s payment method (Electronic check, Mailed check, Bank transfer (automatic), Credit card (automatic))\n",
+    "  고객의 결제 방식 (전자수표, 우편수표, 은행 송금(자동), 신용카드(자동))\n",
+    "- **MonthlyCharges** : The amount charged to the customer monthly\n",
+    "  고객에게 매달 청구되는 금액\n",
+    "- **TotalCharges** : The total amount charged to the customer\n",
+    "  고객에게 청구된 총 금액\n",
+    "- **Churn** : Whether the customer churned or not (Yes or No)\n",
+    "  고객 이탈 여부 (예 또는 아니오)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "240d2282",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-19T19:27:04.567795Z",
+     "iopub.status.busy": "2026-03-19T19:27:04.567508Z",
+     "iopub.status.idle": "2026-03-19T19:27:04.591841Z",
+     "shell.execute_reply": "2026-03-19T19:27:04.590236Z"
+    },
+    "papermill": {
+     "duration": 0.030434,
+     "end_time": "2026-03-19T19:27:04.594012",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:04.563578",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "RangeIndex: 7043 entries, 0 to 7042\n",
+      "Data columns (total 21 columns):\n",
+      " #   Column            Non-Null Count  Dtype  \n",
+      "---  ------            --------------  -----  \n",
+      " 0   customerID        7043 non-null   object \n",
+      " 1   gender            7043 non-null   object \n",
+      " 2   SeniorCitizen     7043 non-null   int64  \n",
+      " 3   Partner           7043 non-null   object \n",
+      " 4   Dependents        7043 non-null   object \n",
+      " 5   tenure            7043 non-null   int64  \n",
+      " 6   PhoneService      7043 non-null   object \n",
+      " 7   MultipleLines     7043 non-null   object \n",
+      " 8   InternetService   7043 non-null   object \n",
+      " 9   OnlineSecurity    7043 non-null   object \n",
+      " 10  OnlineBackup      7043 non-null   object \n",
+      " 11  DeviceProtection  7043 non-null   object \n",
+      " 12  TechSupport       7043 non-null   object \n",
+      " 13  StreamingTV       7043 non-null   object \n",
+      " 14  StreamingMovies   7043 non-null   object \n",
+      " 15  Contract          7043 non-null   object \n",
+      " 16  PaperlessBilling  7043 non-null   object \n",
+      " 17  PaymentMethod     7043 non-null   object \n",
+      " 18  MonthlyCharges    7043 non-null   float64\n",
+      " 19  TotalCharges      7043 non-null   object \n",
+      " 20  Churn             7043 non-null   object \n",
+      "dtypes: float64(1), int64(2), object(18)\n",
+      "memory usage: 1.1+ MB\n"
+     ]
+    }
+   ],
+   "source": [
+    "rawdf.info()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "bd000460",
+   "metadata": {
+    "papermill": {
+     "duration": 0.002764,
+     "end_time": "2026-03-19T19:27:04.599946",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:04.597182",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "결측치가 존재하지 않는다. \n",
+    "\n",
+    "학습에 필요없는 custom id 를 삭제해준다. \n",
+    "\n",
+    "또 데이터 타입을 보니, 타입 변환이 필요해보인다. \n",
+    "\n",
+    "- seniorcitizen 은 0과 1로 이루어져 수치형으로 되어있으나, 범주형으로 처리하는 것이 적절하다\n",
+    "- totalCharges 는 요금인데 범주형으로 되어 있다. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "27efc9f3",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-19T19:27:04.607044Z",
+     "iopub.status.busy": "2026-03-19T19:27:04.606737Z",
+     "iopub.status.idle": "2026-03-19T19:27:04.613725Z",
+     "shell.execute_reply": "2026-03-19T19:27:04.612655Z"
+    },
+    "papermill": {
+     "duration": 0.012715,
+     "end_time": "2026-03-19T19:27:04.615339",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:04.602624",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "df1 = rawdf.drop('customerID', axis=1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "a5796993",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-19T19:27:04.622550Z",
+     "iopub.status.busy": "2026-03-19T19:27:04.622282Z",
+     "iopub.status.idle": "2026-03-19T19:27:04.639346Z",
+     "shell.execute_reply": "2026-03-19T19:27:04.638360Z"
+    },
+    "papermill": {
+     "duration": 0.022613,
+     "end_time": "2026-03-19T19:27:04.640944",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:04.618331",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>gender</th>\n",
+       "      <th>SeniorCitizen</th>\n",
+       "      <th>Partner</th>\n",
+       "      <th>Dependents</th>\n",
+       "      <th>tenure</th>\n",
+       "      <th>PhoneService</th>\n",
+       "      <th>MultipleLines</th>\n",
+       "      <th>InternetService</th>\n",
+       "      <th>OnlineSecurity</th>\n",
+       "      <th>OnlineBackup</th>\n",
+       "      <th>DeviceProtection</th>\n",
+       "      <th>TechSupport</th>\n",
+       "      <th>StreamingTV</th>\n",
+       "      <th>StreamingMovies</th>\n",
+       "      <th>Contract</th>\n",
+       "      <th>PaperlessBilling</th>\n",
+       "      <th>PaymentMethod</th>\n",
+       "      <th>MonthlyCharges</th>\n",
+       "      <th>TotalCharges</th>\n",
+       "      <th>Churn</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>Female</td>\n",
+       "      <td>0</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>1</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No phone service</td>\n",
+       "      <td>DSL</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Month-to-month</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Electronic check</td>\n",
+       "      <td>29.85</td>\n",
+       "      <td>29.85</td>\n",
+       "      <td>No</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>Male</td>\n",
+       "      <td>0</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>34</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>DSL</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>One year</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Mailed check</td>\n",
+       "      <td>56.95</td>\n",
+       "      <td>1889.5</td>\n",
+       "      <td>No</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>Male</td>\n",
+       "      <td>0</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>2</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>DSL</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Month-to-month</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Mailed check</td>\n",
+       "      <td>53.85</td>\n",
+       "      <td>108.15</td>\n",
+       "      <td>Yes</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>Male</td>\n",
+       "      <td>0</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>45</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No phone service</td>\n",
+       "      <td>DSL</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>One year</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Bank transfer (automatic)</td>\n",
+       "      <td>42.30</td>\n",
+       "      <td>1840.75</td>\n",
+       "      <td>No</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>Female</td>\n",
+       "      <td>0</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>2</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Fiber optic</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Month-to-month</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Electronic check</td>\n",
+       "      <td>70.70</td>\n",
+       "      <td>151.65</td>\n",
+       "      <td>Yes</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>...</th>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>7038</th>\n",
+       "      <td>Male</td>\n",
+       "      <td>0</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>24</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>DSL</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>One year</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Mailed check</td>\n",
+       "      <td>84.80</td>\n",
+       "      <td>1990.5</td>\n",
+       "      <td>No</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>7039</th>\n",
+       "      <td>Female</td>\n",
+       "      <td>0</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>72</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Fiber optic</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>One year</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Credit card (automatic)</td>\n",
+       "      <td>103.20</td>\n",
+       "      <td>7362.9</td>\n",
+       "      <td>No</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>7040</th>\n",
+       "      <td>Female</td>\n",
+       "      <td>0</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>11</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No phone service</td>\n",
+       "      <td>DSL</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Month-to-month</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Electronic check</td>\n",
+       "      <td>29.60</td>\n",
+       "      <td>346.45</td>\n",
+       "      <td>No</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>7041</th>\n",
+       "      <td>Male</td>\n",
+       "      <td>1</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>4</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Fiber optic</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Month-to-month</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Mailed check</td>\n",
+       "      <td>74.40</td>\n",
+       "      <td>306.6</td>\n",
+       "      <td>Yes</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>7042</th>\n",
+       "      <td>Male</td>\n",
+       "      <td>0</td>\n",
+       "      <td>No</td>\n",
+       "      <td>No</td>\n",
+       "      <td>66</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Fiber optic</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>No</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Two year</td>\n",
+       "      <td>Yes</td>\n",
+       "      <td>Bank transfer (automatic)</td>\n",
+       "      <td>105.65</td>\n",
+       "      <td>6844.5</td>\n",
+       "      <td>No</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>7043 rows × 20 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "      gender  SeniorCitizen Partner Dependents  tenure PhoneService  \\\n",
+       "0     Female              0     Yes         No       1           No   \n",
+       "1       Male              0      No         No      34          Yes   \n",
+       "2       Male              0      No         No       2          Yes   \n",
+       "3       Male              0      No         No      45           No   \n",
+       "4     Female              0      No         No       2          Yes   \n",
+       "...      ...            ...     ...        ...     ...          ...   \n",
+       "7038    Male              0     Yes        Yes      24          Yes   \n",
+       "7039  Female              0     Yes        Yes      72          Yes   \n",
+       "7040  Female              0     Yes        Yes      11           No   \n",
+       "7041    Male              1     Yes         No       4          Yes   \n",
+       "7042    Male              0      No         No      66          Yes   \n",
+       "\n",
+       "         MultipleLines InternetService OnlineSecurity OnlineBackup  \\\n",
+       "0     No phone service             DSL             No          Yes   \n",
+       "1                   No             DSL            Yes           No   \n",
+       "2                   No             DSL            Yes          Yes   \n",
+       "3     No phone service             DSL            Yes           No   \n",
+       "4                   No     Fiber optic             No           No   \n",
+       "...                ...             ...            ...          ...   \n",
+       "7038               Yes             DSL            Yes           No   \n",
+       "7039               Yes     Fiber optic             No          Yes   \n",
+       "7040  No phone service             DSL            Yes           No   \n",
+       "7041               Yes     Fiber optic             No           No   \n",
+       "7042                No     Fiber optic            Yes           No   \n",
+       "\n",
+       "     DeviceProtection TechSupport StreamingTV StreamingMovies        Contract  \\\n",
+       "0                  No          No          No              No  Month-to-month   \n",
+       "1                 Yes          No          No              No        One year   \n",
+       "2                  No          No          No              No  Month-to-month   \n",
+       "3                 Yes         Yes          No              No        One year   \n",
+       "4                  No          No          No              No  Month-to-month   \n",
+       "...               ...         ...         ...             ...             ...   \n",
+       "7038              Yes         Yes         Yes             Yes        One year   \n",
+       "7039              Yes          No         Yes             Yes        One year   \n",
+       "7040               No          No          No              No  Month-to-month   \n",
+       "7041               No          No          No              No  Month-to-month   \n",
+       "7042              Yes         Yes         Yes             Yes        Two year   \n",
+       "\n",
+       "     PaperlessBilling              PaymentMethod  MonthlyCharges TotalCharges  \\\n",
+       "0                 Yes           Electronic check           29.85        29.85   \n",
+       "1                  No               Mailed check           56.95       1889.5   \n",
+       "2                 Yes               Mailed check           53.85       108.15   \n",
+       "3                  No  Bank transfer (automatic)           42.30      1840.75   \n",
+       "4                 Yes           Electronic check           70.70       151.65   \n",
+       "...               ...                        ...             ...          ...   \n",
+       "7038              Yes               Mailed check           84.80       1990.5   \n",
+       "7039              Yes    Credit card (automatic)          103.20       7362.9   \n",
+       "7040              Yes           Electronic check           29.60       346.45   \n",
+       "7041              Yes               Mailed check           74.40        306.6   \n",
+       "7042              Yes  Bank transfer (automatic)          105.65       6844.5   \n",
+       "\n",
+       "     Churn  \n",
+       "0       No  \n",
+       "1       No  \n",
+       "2      Yes  \n",
+       "3       No  \n",
+       "4      Yes  \n",
+       "...    ...  \n",
+       "7038    No  \n",
+       "7039    No  \n",
+       "7040    No  \n",
+       "7041   Yes  \n",
+       "7042    No  \n",
+       "\n",
+       "[7043 rows x 20 columns]"
+      ]
+     },
+     "execution_count": 6,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df1"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "7c4dd01e",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-19T19:27:04.649863Z",
+     "iopub.status.busy": "2026-03-19T19:27:04.649513Z",
+     "iopub.status.idle": "2026-03-19T19:27:04.656046Z",
+     "shell.execute_reply": "2026-03-19T19:27:04.655238Z"
+    },
+    "papermill": {
+     "duration": 0.013932,
+     "end_time": "2026-03-19T19:27:04.658345",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:04.644413",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "np.int64(0)"
+      ]
+     },
+     "execution_count": 7,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df1['TotalCharges'].isnull().sum()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "b3e98450",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-19T19:27:04.667258Z",
+     "iopub.status.busy": "2026-03-19T19:27:04.666882Z",
+     "iopub.status.idle": "2026-03-19T19:27:04.676099Z",
+     "shell.execute_reply": "2026-03-19T19:27:04.675302Z"
+    },
+    "papermill": {
+     "duration": 0.016169,
+     "end_time": "2026-03-19T19:27:04.678057",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:04.661888",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "np.int64(11)"
+      ]
+     },
+     "execution_count": 8,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df1['TotalCharges'] = pd.to_numeric(df1['TotalCharges'], errors='coerce')\n",
+    "df1['TotalCharges'].isnull().sum()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b1dc4284",
+   "metadata": {
+    "papermill": {
+     "duration": 0.003189,
+     "end_time": "2026-03-19T19:27:04.684721",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:04.681532",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "결측치가 존재하지 않다가, 숫자로 변환을 시도하니 결측치가 발생했다. \n",
+    "\n",
+    "숫자로 변환할 수 없는 무언가가 들어있던 모양이다. \n",
+    "\n",
+    "결측치는 나중에 '학습 데이터의 중앙값' 등으로 채우기 위해 일단 두기\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "459e25cf",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-19T19:27:04.692789Z",
+     "iopub.status.busy": "2026-03-19T19:27:04.692479Z",
+     "iopub.status.idle": "2026-03-19T19:27:04.701721Z",
+     "shell.execute_reply": "2026-03-19T19:27:04.700351Z"
+    },
+    "papermill": {
+     "duration": 0.016267,
+     "end_time": "2026-03-19T19:27:04.704172",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:04.687905",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "df1['SeniorCitizen'] = df1['SeniorCitizen'].astype('category')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "3e91861d",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-19T19:27:04.712555Z",
+     "iopub.status.busy": "2026-03-19T19:27:04.712246Z",
+     "iopub.status.idle": "2026-03-19T19:27:04.732818Z",
+     "shell.execute_reply": "2026-03-19T19:27:04.731672Z"
+    },
+    "papermill": {
+     "duration": 0.027556,
+     "end_time": "2026-03-19T19:27:04.735276",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:04.707720",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "RangeIndex: 7043 entries, 0 to 7042\n",
+      "Data columns (total 20 columns):\n",
+      " #   Column            Non-Null Count  Dtype   \n",
+      "---  ------            --------------  -----   \n",
+      " 0   gender            7043 non-null   object  \n",
+      " 1   SeniorCitizen     7043 non-null   category\n",
+      " 2   Partner           7043 non-null   object  \n",
+      " 3   Dependents        7043 non-null   object  \n",
+      " 4   tenure            7043 non-null   int64   \n",
+      " 5   PhoneService      7043 non-null   object  \n",
+      " 6   MultipleLines     7043 non-null   object  \n",
+      " 7   InternetService   7043 non-null   object  \n",
+      " 8   OnlineSecurity    7043 non-null   object  \n",
+      " 9   OnlineBackup      7043 non-null   object  \n",
+      " 10  DeviceProtection  7043 non-null   object  \n",
+      " 11  TechSupport       7043 non-null   object  \n",
+      " 12  StreamingTV       7043 non-null   object  \n",
+      " 13  StreamingMovies   7043 non-null   object  \n",
+      " 14  Contract          7043 non-null   object  \n",
+      " 15  PaperlessBilling  7043 non-null   object  \n",
+      " 16  PaymentMethod     7043 non-null   object  \n",
+      " 17  MonthlyCharges    7043 non-null   float64 \n",
+      " 18  TotalCharges      7032 non-null   float64 \n",
+      " 19  Churn             7043 non-null   object  \n",
+      "dtypes: category(1), float64(2), int64(1), object(16)\n",
+      "memory usage: 1.0+ MB\n"
+     ]
+    }
+   ],
+   "source": [
+    "df1.info()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f748dcbc",
+   "metadata": {
+    "papermill": {
+     "duration": 0.003245,
+     "end_time": "2026-03-19T19:27:04.742366",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:04.739121",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# 2. 데이터 분리"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "0f1c88d6",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-19T19:27:04.750433Z",
+     "iopub.status.busy": "2026-03-19T19:27:04.750137Z",
+     "iopub.status.idle": "2026-03-19T19:27:06.910847Z",
+     "shell.execute_reply": "2026-03-19T19:27:06.909502Z"
+    },
+    "papermill": {
+     "duration": 2.167603,
+     "end_time": "2026-03-19T19:27:06.913167",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:04.745564",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "전체 데이터 수: 7043\n",
+      "학습 데이터 수: 5634\n",
+      "테스트 데이터 수: 1409\n",
+      "\n",
+      "--- 타겟 비율 확인 ---\n",
+      "원본 비율:\n",
+      "Churn\n",
+      "No     0.73463\n",
+      "Yes    0.26537\n",
+      "Name: proportion, dtype: float64\n",
+      "학습 세트 비율:\n",
+      "Churn\n",
+      "No     0.734647\n",
+      "Yes    0.265353\n",
+      "Name: proportion, dtype: float64\n"
+     ]
+    }
+   ],
+   "source": [
+    "from sklearn.model_selection import train_test_split\n",
+    "\n",
+    "# 1. 특성(X)과 타겟(y) 분리\n",
+    "X = df1.drop('Churn', axis=1)\n",
+    "y = df1['Churn']\n",
+    "\n",
+    "# 2. 데이터 분할 (8:2 비율)\n",
+    "# random_state=42: 결과 재현을 위해 설정\n",
+    "# stratify=y: 타겟(Churn)의 비율을 학습/테스트 세트에 동일하게 분배\n",
+    "X_train, X_test, y_train, y_test = train_test_split(\n",
+    "    X, y, test_size=0.2, random_state=42, stratify=y\n",
+    ")\n",
+    "\n",
+    "print(f\"전체 데이터 수: {len(df1)}\")\n",
+    "print(f\"학습 데이터 수: {len(X_train)}\")\n",
+    "print(f\"테스트 데이터 수: {len(X_test)}\")\n",
+    "\n",
+    "# 비율 확인 (잘 나뉘었는지!)\n",
+    "print(\"\\n--- 타겟 비율 확인 ---\")\n",
+    "print(f\"원본 비율:\\n{y.value_counts(normalize=True)}\")\n",
+    "print(f\"학습 세트 비율:\\n{y_train.value_counts(normalize=True)}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "760c4f44",
+   "metadata": {
+    "papermill": {
+     "duration": 0.00339,
+     "end_time": "2026-03-19T19:27:06.920136",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:06.916746",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# 3. 데이터 시각화 EDA\n",
+    "\n",
+    "- 타겟 데이터, 수치형/범주형 데이터의 분포를 확인한다.\n",
+    "- 타겟과 변수간 관계를 확인한다.\n",
+    "- 변수간 상관관계 확인한다. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "9554c5f5",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-03-19T19:27:06.928685Z",
+     "iopub.status.busy": "2026-03-19T19:27:06.928148Z",
+     "iopub.status.idle": "2026-03-19T19:27:07.609256Z",
+     "shell.execute_reply": "2026-03-19T19:27:07.608369Z"
+    },
+    "papermill": {
+     "duration": 0.687424,
+     "end_time": "2026-03-19T19:27:07.610771",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:06.923347",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "image/png": "iVBORw0KGgoAAAANSUhEUgAAAjAAAAGdCAYAAAAMm0nCAAAAOnRFWHRTb2Z0d2FyZQBNYXRwbG90bGliIHZlcnNpb24zLjEwLjAsIGh0dHBzOi8vbWF0cGxvdGxpYi5vcmcvlHJYcgAAAAlwSFlzAAAPYQAAD2EBqD+naQAAL6xJREFUeJzt3X9UVWW+x/EPghx/HggVjlxRKW8qCv5q0jOWS5M4KjU50p2xHDUlvXqxGaWUmGVWNitMx9T8kTaVOGv0mpU6JVeRcNRS/BENI1Ix6cVBRw9YJkdNQYH7xyz27eSPAkF46P1aa6/leZ7vfs73mbUYPu2zz8ansrKyUgAAAAZpUt8NAAAAVBcBBgAAGIcAAwAAjEOAAQAAxiHAAAAA4xBgAACAcQgwAADAOAQYAABgHL/6bqCuVFRU6OTJk2rdurV8fHzqux0AAPADVFZW6ty5cwoNDVWTJte/ztJoA8zJkycVFhZW320AAIAaOH78uDp06HDd+UYbYFq3bi3pX/8D2O32eu4GAAD8EB6PR2FhYdbv8etptAGm6mMju91OgAEAwDDfd/sHN/ECAADjEGAAAIBxCDBocObNmycfHx9Nnz7dGnvttdc0ePBg2e12+fj46OzZs1ed97Of/UwdO3ZUs2bN1L59e40dO1YnT570qtmwYYN69+6tFi1aqFOnTlqwYEEd7wYAUBcIMGhQDh48qFWrVikqKspr/JtvvtGwYcP029/+9rrnDhkyRBs2bFB+fr7effddHT16VA8//LA1v3XrVo0ZM0ZTpkzR4cOHtWLFCi1atEjLli2rs/0AAOqGT2VlZWV9N1EXPB6PAgICVFJSwk28hjh//rz69u2rFStW6He/+5169+6txYsXe9Xs3LlTQ4YM0ddff63AwMAbrvfee+9p5MiRKi0tVdOmTfXoo4/q8uXLevvtt62apUuXav78+SosLOR5QQDQAPzQ399cgUGDkZCQoNjYWEVHR9/0WmfOnNHatWv105/+VE2bNpUklZaWqlmzZl51zZs314kTJ/SPf/zjpt8TAHDrEGDQIKxfv16ffPKJUlJSbmqdpKQktWzZUm3atFFhYaH+/Oc/W3Mul0sbN25UZmamKioq9Pe//10LFy6UJJ06deqm3hcAcGsRYFDvjh8/rt/85jdau3btVVdIqmvmzJn661//qu3bt8vX11fjxo1T1aekkyZN0rRp0/TAAw/I399fAwYM0OjRoyXpho+rBgA0PNwDg3q3efNm/fznP5evr681Vl5eLh8fHzVp0kSlpaXWXHXugTlx4oTCwsK0d+9eOZ1Or7XdbrfatWunzMxMjRgxQsXFxWrXrl2d7A8A8MP90N/fjfZJvDDH0KFDlZub6zU2YcIEdevWTUlJSV7BpjoqKiok/evel2/z9fXVv/3bv0mS/vu//1tOp5PwAgCGIcCg3rVu3Vo9e/b0Gqu6j6Vq3O12y+1268iRI5Kk3NxctW7dWh07dlRQUJD279+vgwcP6p577tFtt92mo0eP6plnntEdd9xhXX358ssv9c4772jw4MG6dOmSVq9erbffflu7du26tRsGANw0PviHEVauXKk+ffpo0qRJkqRBgwapT58+eu+99yRJLVq00MaNGzV06FB17dpV8fHxioqK0q5du2Sz2ax11qxZo7vuuksDBw5UXl6edu7cqbvvvrte9gQAqDnugQEAAA0Gz4EBAACNFvfA1EDnp9PquwWgQTs2L7a+WwDQyHEFBgAAGIcAAwAAjEOAAQAAxiHAAAAA4xBgAACAcQgwAADAOAQYAABgnJsKMPPmzZOPj4+mT59ujV26dEkJCQlq06aNWrVqpbi4OBUVFXmdV1hYqNjYWLVo0ULBwcGaOXOmrly54lWzc+dO9e3bVzabTV26dFFqaurNtAoAABqRGgeYgwcPatWqVYqKivIanzFjht5//33rj+SdPHlSo0aNsubLy8sVGxursrIy7d27V2vWrFFqaqrmzJlj1RQUFCg2NlZDhgxRTk6Opk+frscff1zp6ek1bRcAADQiNQow58+f15gxY/SHP/xBt912mzVeUlKiN954Qy+//LLuu+8+9evXT6tXr9bevXu1b98+SdL27dv16aef6k9/+pN69+6t4cOH64UXXtDy5ctVVlYm6V9/uC88PFwLFy5U9+7dNW3aND388MNatGhRLWwZAACYrkYBJiEhQbGxsYqOjvYaz87O1uXLl73Gu3Xrpo4dOyorK0uSlJWVpcjISIWEhFg1LpdLHo9HeXl5Vs1313a5XNYa11JaWiqPx+N1AACAxqnafwtp/fr1+uSTT3Tw4MGr5txut/z9/RUYGOg1HhISIrfbbdV8O7xUzVfN3ajG4/Ho4sWLat68+VXvnZKSoueff7662wEAAAaq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\n",
+      "text/plain": [
+       "<Figure size 640x480 with 1 Axes>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "import matplotlib.pyplot as plt\n",
+    "import seaborn as sns\n",
+    "\n",
+    "# 데이터 준비\n",
+    "val_count = y_train.value_counts().sort_index()\n",
+    "\n",
+    "# 그래프 생성을 위한 figure와 axes 객체 초기화\n",
+    "fig, ax = plt.subplots()\n",
+    "\n",
+    "# 막대 그래프 생성\n",
+    "ax.bar(val_count.index, val_count.values)\n",
+    "\n",
+    "# 각 막대에 숫자 추가\n",
+    "for i, count in enumerate(val_count.values):\n",
+    "    ax.text(i, count + 0.1, str(count), ha='center', va='bottom')\n",
+    "\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "862f9aeb",
+   "metadata": {
+    "papermill": {
+     "duration": 0.00327,
+     "end_time": "2026-03-19T19:27:07.617673",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:07.614403",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "train의 타겟(churn) 분포를 확인해보니 No가 압도적으로 많다. \n",
+    "\n",
+    "바로 데이터 불균형이다. \n",
+    "\n",
+    "불균형 문제 해결을 위해 모델링 단계에서 SMOTE 기법를 사용하겠다. \n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7930cc99",
+   "metadata": {
+    "papermill": {
+     "duration": 0.003208,
+     "end_time": "2026-03-19T19:27:07.624240",
+     "exception": false,
+     "start_time": "2026-03-19T19:27:07.621032",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kaggle": {
+   "accelerator": "none",
+   "dataSources": [
+    {
+     "databundleVersionId": 18858,
+     "datasetId": 13996,
+     "sourceId": 18858,
+     "sourceType": "datasetVersion"
+    }
+   ],
+   "dockerImageVersionId": 31286,
+   "isGpuEnabled": false,
+   "isInternetEnabled": true,
+   "language": "python",
+   "sourceType": "notebook"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.12.12"
+  },
+  "papermill": {
+   "default_parameters": {},
+   "duration": 8.282507,
+   "end_time": "2026-03-19T19:27:08.250007",
+   "environment_variables": {},
+   "exception": null,
+   "input_path": "__notebook__.ipynb",
+   "output_path": "__notebook__.ipynb",
+   "parameters": {},
+   "start_time": "2026-03-19T19:26:59.967500",
+   "version": "2.6.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
